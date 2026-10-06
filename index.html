@@ -1,0 +1,999 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl" id="htmlRoot">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title id="pageTitle">O_S RP - حاسبة السيارات حسب الشركات</title>
+<style>
+:root {
+--bg: #121212; --card-bg: #1e1e1e; --input-bg: #252525;
+--border: #444; --accent: #ff9800; --text: #fff;
+}
+* {
+    box-sizing: border-box;
+}
+body { 
+    font-family: system-ui, -apple-system, sans-serif; 
+    background: var(--bg); 
+    color: var(--text); 
+    margin: 0; 
+    padding: 0; 
+    width: 100%;
+    overflow-x: hidden;
+}
+.container { 
+    width: 100%; 
+    min-height: 100vh;
+    margin: 0; 
+    background: var(--card-bg); 
+    padding: 10px 8px 40px 8px; 
+    border-radius: 0; 
+    box-shadow: none; 
+}
+h2, h3 { text-align: center; color: var(--accent); margin: 5px 0 15px; }
+.flex { display: flex; gap: 10px; flex-wrap: wrap; }
+
+.top-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+.lang-btn { background: var(--input-bg); color: var(--accent); border: 1px solid var(--border); padding: 6px 12px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 13px; }
+
+/* تنسيق زر القائمة الجانبية (الثلاث شخطات) */
+.menu-btn {
+    background: var(--input-bg);
+    color: var(--accent);
+    border: 1px solid var(--border);
+    padding: 6px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 18px;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* تنسيق القائمة الجانبية المخفية من اليسار */
+.side-drawer {
+    position: fixed;
+    top: 0;
+    left: -280px;
+    width: 280px;
+    height: 100%;
+    background: #1a1a1a;
+    border-right: 1px solid var(--border);
+    box-shadow: 4px 0 15px rgba(0,0,0,0.5);
+    transition: 0.3s ease;
+    z-index: 1000;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+}
+.side-drawer.open {
+    left: 0;
+}
+.drawer-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 30px;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 10px;
+}
+.drawer-close {
+    background: none;
+    border: none;
+    color: #aaa;
+    font-size: 22px;
+    cursor: pointer;
+}
+.drawer-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--input-bg);
+    color: #fff;
+    padding: 12px 15px;
+    border-radius: 8px;
+    text-decoration: none;
+    font-weight: bold;
+    border: 1px solid var(--border);
+    transition: 0.2s;
+}
+.drawer-item:hover {
+    border-color: var(--accent);
+    background: #2a2a2a;
+}
+.drawer-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.6);
+    display: none;
+    z-index: 999;
+}
+.drawer-overlay.open {
+    display: block;
+}
+
+.search-container { display: flex; justify-content: center; width: 100%; margin-bottom: 12px; }
+.search-box { width: 100%; padding: 11px; background: var(--input-bg); border: 1px solid var(--border); color: #fff; border-radius: 8px; outline: none; font-size: 15px; text-align: inherit; box-sizing: border-box; }
+.search-box:focus { border-color: var(--accent); }
+
+.type-filters { display: flex; gap: 8px; margin-bottom: 12px; width: 100%; }
+.type-btn { flex: 1; padding: 10px; background: var(--input-bg); border: 1px solid var(--border); color: #aaa; border-radius: 8px; cursor: pointer; font-weight: bold; text-align: center; transition: 0.2s; }
+.type-btn.active { background: var(--accent); color: #000; border-color: var(--accent); }
+
+.brands-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 15px; max-height: 58vh; overflow-y: auto; padding-left: 2px; padding-right: 2px; }
+.brand-card { background: var(--input-bg); border: 1px solid var(--border); padding: 12px; border-radius: 8px; text-align: center; cursor: pointer; transition: 0.2s; font-weight: bold; color: var(--accent); text-transform: uppercase; }
+.brand-card:hover { border-color: var(--accent); background: #2a2a2a; transform: translateY(-2px); }
+
+.cars-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; max-height: 58vh; overflow-y: auto; padding-left: 2px; padding-right: 2px; }
+@media (max-width: 500px) { .cars-grid { grid-template-columns: 1fr; } }
+
+.car-card { background: var(--input-bg); padding: 12px; border-radius: 8px; cursor: pointer; border: 1px solid #333; transition: 0.2s; display: flex; flex-direction: column; justify-content: space-between; position: relative; }
+.car-card:hover { border-color: var(--accent); background: #2a2a2a; }
+
+/* تنسيق النجمة الشفافة والصفراء */
+.favorite-star {
+    font-size: 20px;
+    color: transparent;
+    -webkit-text-stroke: 1.5px #ffc107;
+    cursor: pointer;
+    transition: 0.2s ease;
+    user-select: none;
+    display: inline-block;
+}
+.favorite-star.active {
+    color: #ffc107;
+    -webkit-text-stroke: 0px;
+    transform: scale(1.1);
+}
+
+.badge { padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: bold; }
+.badge.secret { background: #e74c3c; color: #fff; }
+.badge.legendary { background: #ffcc00; color: #000; }
+.badge.epic { background: #af52de; color: #fff; }
+.badge.rare { background: #007aff; color: #fff; }
+.badge.uncommon { background: #34c759; color: #000; }
+
+.btn-back { background: #e74c3c; color: #fff; border: none; padding: 10px 18px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 14px; }
+
+#carListView, #tuningView, #favoritesView { display: none; }
+.car-info-box { background: var(--input-bg); padding: 12px; border-radius: 8px; margin: 12px 0; font-size: 14px; }
+html[dir="rtl"] .car-info-box { border-right: 4px solid var(--accent); border-left: none; }
+html[dir="ltr"] .car-info-box { border-left: 4px solid var(--accent); border-right: none; }
+
+.info-row { margin: 5px 0; display: flex; justify-content: space-between; align-items: center; }
+.parts-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
+.part-item { background: var(--input-bg); padding: 8px 10px; border-radius: 6px; border-bottom: 3px solid #333; display: flex; flex-direction: column; }
+.part-header { display: flex; justify-content: space-between; align-items: center; font-size: 13px; font-weight: bold; }
+
+.counter-box { display: flex; align-items: center; justify-content: space-between; background: #1a1a1a; border: 1px solid var(--border); border-radius: 6px; margin-top: 6px; overflow: hidden; height: 38px; }
+.counter-btn { background: #333; color: #fff; border: none; width: 40px; height: 100%; font-size: 18px; font-weight: bold; cursor: pointer; transition: 0.2s; display: flex; align-items: center; justify-content: center; }
+.counter-btn:hover { background: var(--accent); color: #000; }
+.counter-value { font-weight: bold; font-size: 16px; color: #fff; flex: 1; text-align: center; }
+
+.p-red { border-bottom-color: #ff3b30; } .p-gold { border-bottom-color: #ffcc00; }
+.p-purple { border-bottom-color: #af52de; } .p-blue { border-bottom-color: #007aff; }
+.p-green { border-bottom-color: #34c759; } .p-gray { border-bottom-color: #8e8e93; }
+
+.result { background: var(--input-bg); padding: 15px; margin-top: 15px; border-radius: 8px; }
+html[dir="rtl"] .result { border-right: 5px solid var(--accent); border-left: none; }
+html[dir="ltr"] .result { border-left: 5px solid var(--accent); border-right: none; }
+
+.res-row { margin: 8px 0; font-size: 15px; display: flex; justify-content: space-between; }
+.val { font-weight: bold; }
+</style>
+</head>
+<body>
+
+<!-- القائمة الجانبية -->
+<div class="drawer-overlay" id="drawerOverlay" onclick="toggleDrawer()"></div>
+<div class="side-drawer" id="sideDrawer">
+    <div class="drawer-header">
+        <span id="drawerMenuTitle" style="font-weight: bold; color: var(--accent); font-size: 16px;">القائمة الرئيسية</span>
+        <button class="drawer-close" onclick="toggleDrawer()">✕</button>
+    </div>
+    <a href="https://discord.gg/FGteWTxm" target="_blank" class="drawer-item">
+        <span style="font-size: 18px;">💬</span>
+        <span id="supportLinkText">التواصل مع الدعم</span>
+    </a>
+</div>
+
+<div class="container">
+<div class="top-bar">
+<button class="menu-btn" onclick="toggleDrawer()">☰</button>
+<button class="lang-btn" onclick="toggleLanguage()">🌐 English / العربية</button>
+</div>
+
+<h2 id="mainTitle">O_S RP - حاسبة السيارات حسب الشركات</h2>
+
+<div id="brandsView">
+<div class="search-container">
+<input type="text" id="globalSearch" class="search-box" placeholder="🔍 ابحث عن أي سيارة مباشرة بالاسم..." onkeyup="globalSearchCars(this.value)">
+</div>
+
+<div class="type-filters">
+<button class="type-btn" id="btnEconomy" onclick="setTypeFilter('economy', this)">اقتصادي</button>
+<button class="type-btn" id="btnPremium" onclick="setTypeFilter('premium', this)">فاخر</button>
+<button class="type-btn active" id="btnAll" onclick="setTypeFilter('all', this)">الكل</button>
+<button class="type-btn" id="btnFavorites" onclick="showFavoritesView()" style="background: #2a2a2a; color: #ffc107; border-color: #ffc107;">⭐ المفضلة</button>
+</div>
+
+<div class="flex" style="justify-content: space-between; align-items: center; font-size: 13px; color: #888; margin-bottom: 8px;">
+<span id="selectBrandLabel">اختر الشركة لعرض سياراتها:</span>
+<span id="totalCarsCount" style="color: var(--accent); font-weight: bold;">مجموع السيارات: 0</span>
+</div>
+
+<div class="brands-grid" id="brandsGrid"></div>
+</div>
+
+<div id="favoritesView">
+<div class="flex" style="justify-content: space-between; align-items: center; margin-bottom: 12px;">
+<button class="btn-back" id="backFromFavoritesBtn" onclick="showBrandsView()">العودة للشركات</button>
+<h3 id="selectedFavoritesTitle" style="margin:0; text-transform: uppercase;">السيارات المفضلة</h3>
+</div>
+<div style="font-size: 13px; color: #888; margin-bottom: 8px;" id="favoriteCountInfo">عدد السيارات المفضلة: 0</div>
+<div class="cars-grid" id="favoritesGrid"></div>
+</div>
+
+<div id="carListView">
+<div class="flex" style="justify-content: space-between; align-items: center; margin-bottom: 12px;">
+<button class="btn-back" id="backToBrandsBtn" onclick="showBrandsView()">العودة للشركات</button>
+<h3 id="selectedBrandTitle" style="margin:0; text-transform: uppercase;"></h3>
+</div>
+<div style="font-size: 13px; color: #888; margin-bottom: 8px;" id="carCountInfo">عدد السيارات: 0</div>
+<div class="cars-grid" id="carsGrid"></div>
+</div>
+
+<div id="tuningView">
+<div class="flex" style="justify-content: space-between; align-items: center; margin-bottom: 15px;">
+<button class="btn-back" id="backToCarsBtn" onclick="showCarListAgain()">العودة للسيارات</button>
+<h3 id="selectedCarTitle" style="margin:0; text-transform: uppercase;"></h3>
+</div>
+
+<div class="car-info-box">
+<div class="info-row"><span id="lblMinStock">السعر الأدنى الستوك المعتمد:</span> <span id="infoPrice" style="color: #2196F3; font-weight: bold;">0$</span></div>
+<div class="info-row"><span id="lblRarity">ندرة السيارة والفئة:</span> <span id="infoRarity" style="font-weight: bold;">-</span></div>
+</div>
+
+<label id="lblEnterParts" style="display:block; text-align:inherit; font-weight: bold; color: var(--accent);">اختر عدد قطع التعديل (من 0 إلى 8):</label>
+<div class="parts-grid" id="partsGridInputs"></div>
+
+<div class="result">
+<div class="res-row"><span id="lblHammerStock">🔨 سعر المطرقة ستوك :</span> <span id="outStock" class="val">0</span></div>
+<div class="res-row"><span id="lblMinMod">🔵 السعر الأدنى الحالي :</span> <span id="outMin" class="val" style="color:#2196F3;">0</span></div>
+<div class="res-row"><span id="lblHammerMod">🟠 سعر المطرقة الحالي :</span> <span id="outHammer" class="val" style="color:var(--accent);">0</span></div>
+<hr style="border: 0; border-top: 1px solid var(--border); margin: 10px 0;">
+<div class="res-row"><span id="lblVmMax">📈 الحد   الأعلى المتوقع : </span> <span id="outVmMax" class="val" style="color:#4caf50;">0</span></div>
+</div>
+</div>
+</div>
+
+<script>
+let lang = 'ar';
+let partsData = { red: 0, gold: 0, purple: 0, blue: 0, green: 0, gray: 0 };
+let favorites = JSON.parse(localStorage.getItem('os_rp_favorites') || '[]');
+
+const translations = {
+ar: {
+title: "O_S RP - حاسبة السيارات حسب الشركات",
+searchPlaceholder: "🔍 ابحث عن أي سيارة مباشرة بالاسم...",
+economy: "اقتصادي",
+premium: "فاخر",
+all: "الكل",
+favorites: "⭐ المفضلة",
+selectBrand: "اختر الشركة لعرض سياراتها:",
+totalCars: "مجموع السيارات: ",
+carCount: "عدد السيارات: ",
+favoriteCount: "عدد السيارات المفضلة: ",
+favoriteTitle: "السيارات المفضلة",
+carsSuffix: "سيارات",
+backToBrands: "العودة للشركات",
+backToCars: "العودة للسيارات",
+minStock: "السعر الأدنى الستوك المعتمد:",
+rarityLbl: "ندرة السيارة والفئة:",
+enterParts: "اختر عدد قطع التعديل (من 0 إلى 8):",
+hammerStock: "🔨 سعر المطرقة ستوك :",
+minMod: "🔵 السعر الأدنى المطور:",
+hammerMod: "🟠 سعر المطرقة المطور النهائي:",
+vmMax: "📈 الحد الأعلى المتوقع :",
+noMatch: "لم يتم العثور على سيارة مطابقة ضمن الفلتر المختار",
+noFavorites: "لا توجد سيارات مضافة إلى المفضلة حتى الآن",
+supportText: "التواصل مع الدعم",
+menuTitle: "القائمة الرئيسية",
+tiers: { premium: "فاخر", medium: "متوسط", economy: "اقتصادي" },
+parts: { 
+    red: { name: 'أحمر', code: 'RED' }, 
+    gold: { name: 'ذهبي', code: 'GOLD' }, 
+    purple: { name: 'بنفسجي', code: 'PURPLE' }, 
+    blue: { name: 'أزرق', code: 'BLUE' }, 
+    green: { name: 'أخضر', code: 'GREEN' }, 
+    gray: { name: 'فضي', code: 'GRAY' } 
+}
+},
+en: {
+title: "O_S RP - Cars Calculator by Brands",
+searchPlaceholder: "🔍 Search any car by name...",
+economy: "Economy",
+premium: "Premium",
+all: "All",
+favorites: "⭐ Favorites",
+selectBrand: "Select a brand to view its cars:",
+totalCars: "Total Cars: ",
+carCount: "Cars Count: ",
+favoriteCount: "Favorite Cars Count: ",
+favoriteTitle: "Favorite Cars",
+carsSuffix: "cars",
+backToBrands: "Back to Brands",
+backToCars: "Back to Cars",
+minStock: "Approved Min Stock Price:",
+rarityLbl: "Car Rarity & Tier:",
+enterParts: "Select tuning parts count (0 to 8):",
+hammerStock: "🔨 Stock Hammer Price:",
+minMod: "🔵 Min Upgraded Price:",
+hammerMod: "Final Upgraded Hammer Price:",
+vmMax: "📈 Expected Market Max (VM Max):",
+noMatch: "No matching car found under the selected filter",
+noFavorites: "No favorite cars added yet",
+supportText: "Support Contact",
+menuTitle: "Main Menu",
+tiers: { premium: "PREMIUM", medium: "MEDIUM", economy: "ECONOMY" },
+parts: { 
+    red: { name: 'Red', code: 'RED' }, 
+    gold: { name: 'Gold', code: 'GOLD' }, 
+    purple: { name: 'Purple', code: 'PURPLE' }, 
+    blue: { name: 'Blue', code: 'BLUE' }, 
+    green: { name: 'Green', code: 'GREEN' }, 
+    gray: { name: 'Gray', code: 'GRAY' } 
+}
+}
+};
+
+const db = {
+premium: { RED: 5508594, GOLD: 1836197, PURPLE: 612066, BLUE: 204048, GREEN: 68016, GRAY: 22698 },
+medium: { RED: 2947698, GOLD: 982566, PURPLE: 327522, BLUE: 40804, GREEN: 13601, GRAY: 4533 },
+economy: { RED: 2947929, GOLD: 982643, PURPLE: 327522, BLUE: 54599, GREEN: 10927, GRAY: 3650 }
+};
+
+const cars = [
+{n: "TAKAWA R2600 RAICHO", t: "premium", c: "secret", cn: {ar: "سري", en: "Secret"}, b: "TAKAWA", p: 35000000, rt: "premium"},
+{n: "MADDOX-REILLY INSTIGATOR", t: "premium", c: "legendary", cn: {ar: "أسطوري", en: "Legendary"}, b: "MADDOX-REILLY", p: 27500000, rt: "premium"},
+{n: "RUCATI CHATEU", t: "premium", c: "secret", cn: {ar: "سري", en: "Secret"}, b: "RUCATI", p: 37500000, rt: "premium"},
+{n: "RUCATI DIVA", t: "premium", c: "secret", cn: {ar: "سري", en: "Secret"}, b: "RUCATI", p: 50000000, rt: "premium"},
+{n: "RUCATI SETTE", t: "premium", c: "secret", cn: {ar: "سري", en: "Secret"}, b: "RUCATI", p: 50000000, rt: "premium"},
+{n: "RUCATI CRYSTAL", t: "premium", c: "secret", cn: {ar: "سري", en: "Secret"}, b: "RUCATI", p: 50000000, rt: "premium"},
+{n: "RUCATI FIREBALL", t: "premium", c: "secret", cn: {ar: "سري", en: "Secret"}, b: "RUCATI", p: 50000000, rt: "premium"},
+{n: "RUCATI VERNE", t: "premium", c: "secret", cn: {ar: "سري", en: "Secret"}, b: "RUCATI", p: 32500000, rt: "premium"},
+{n: "AGNELLI COLLINA", t: "premium", c: "secret", cn: {ar: "سري", en: "Secret"}, b: "AGNELLI", p: 34000000, rt: "premium"},
+{n: "BARNETT CHIMERA", t: "premium", c: "secret", cn: {ar: "سري", en: "Secret"}, b: "BARNETT", p: 31250000, rt: "premium"},
+{n: "FANGIO ZONE R", t: "premium", c: "secret", cn: {ar: "سري", en: "Secret"}, b: "FANGIO", p: 30000000, rt: "premium"},
+{n: "BARNETT ARROWHEAD", t: "premium", c: "secret", cn: {ar: "سري", en: "Secret"}, b: "BARNETT", p: 35000000, rt: "premium"},
+{n: "LYNX EDIN", t: "premium", c: "secret", cn: {ar: "سري", en: "Secret"}, b: "LYNX", p: 30500000, rt: "premium"},
+{n: "ELEGANTE ELEOS", t: "premium", c: "secret", cn: {ar: "سري", en: "Secret"}, b: "ELEGANTE", p: 27500000, rt: "premium"},
+{n: "NIMROD TITAN FREEBORN", t: "premium", c: "secret", cn: {ar: "سري", en: "Secret"}, b: "NIMROD", p: 25000000, rt: "premium"},
+{n: "FERRINI SALERNO", t: "premium", c: "secret", cn: {ar: "سري", en: "Secret"}, b: "FERRINI", p: 12500000, rt: "premium"},
+{n: "ELEGANTE VITTORIA", t: "premium", c: "secret", cn: {ar: "سري", en: "Secret"}, b: "ELEGANTE", p: 17500000, rt: "premium"},
+{n: "BARNETT COLUMN", t: "premium", c: "secret", cn: {ar: "سري", en: "Secret"}, b: "BARNETT", p: 15000000, rt: "premium"},
+{n: "FERRINI 578", t: "premium", c: "secret", cn: {ar: "سري", en: "Secret"}, b: "FERRINI", p: 15000000, rt: "premium"},
+{n: "BARNETT SPIRIT", t: "premium", c: "secret", cn: {ar: "سري", en: "Secret"}, b: "BARNETT", p: 12500000, rt: "premium"},
+{n: "NIMROD TITAN", t: "premium", c: "legendary", cn: {ar: "أسطوري", en: "Legendary"}, b: "NIMROD", p: 12250000, rt: "premium"},
+{n: "ELEGANTE URSA", t: "premium", c: "legendary", cn: {ar: "أسطوري", en: "Legendary"}, b: "ELEGANTE", p: 10000000, rt: "premium"},
+{n: "MCQUEEN TURBO", t: "premium", c: "legendary", cn: {ar: "أسطوري", en: "Legendary"}, b: "MCQUEEN", p: 10000000, rt: "premium"},
+{n: "MATHILDE KOMMISSAR 4X4", t: "premium", c: "legendary", cn: {ar: "أسطوري", en: "Legendary"}, b: "MATHILDE", p: 10000000, rt: "premium"},
+{n: "MATHILDE KOMMISSAR ATV", t: "premium", c: "legendary", cn: {ar: "أسطوري", en: "Legendary"}, b: "MATHILDE", p: 7000000, rt: "premium"},
+{n: "NIMROD TITAN EV", t: "premium", c: "legendary", cn: {ar: "أسطوري", en: "Legendary"}, b: "NIMROD", p: 11500000, rt: "premium"},
+{n: "CHEREAU PARALLAX", t: "premium", c: "legendary", cn: {ar: "أسطوري", en: "Legendary"}, b: "CHEREAU", p: 15000000, rt: "premium"},
+{n: "LYNX G10", t: "premium", c: "legendary", cn: {ar: "أسطوري", en: "Legendary"}, b: "LYNX", p: 9000000, rt: "premium"},
+{n: "FUJITA GTR", t: "premium", c: "legendary", cn: {ar: "أسطوري", en: "Legendary"}, b: "FUJITA", p: 9000000, rt: "premium"},
+{n: "ELEGANTE VYRANO", t: "premium", c: "legendary", cn: {ar: "أسطوري", en: "Legendary"}, b: "ELEGANTE", p: 8250000, rt: "premium"},
+{n: "ELEGANTE GALILEI", t: "premium", c: "legendary", cn: {ar: "أسطوري", en: "Legendary"}, b: "ELEGANTE", p: 8000000, rt: "premium"},
+{n: "FERRINI PUREZZA", t: "premium", c: "legendary", cn: {ar: "أسطوري", en: "Legendary"}, b: "FERRINI", p: 8000000, rt: "premium"},
+{n: "BOMBER B1", t: "premium", c: "legendary", cn: {ar: "أسطوري", en: "Legendary"}, b: "BOMBER", p: 7500000, rt: "premium"},
+{n: "LUXOR NAGINATA", t: "premium", c: "legendary", cn: {ar: "أسطوري", en: "Legendary"}, b: "LUXOR", p: 6500000, rt: "premium"},
+{n: "CHEREAU CORSAIRE III", t: "premium", c: "legendary", cn: {ar: "أسطوري", en: "Legendary"}, b: "CHEREAU", p: 6000000, rt: "premium"},
+{n: "MATHILDE ZENITH GT", t: "premium", c: "legendary", cn: {ar: "أسطوري", en: "Legendary"}, b: "MATHILDE", p: 5500000, rt: "premium"},
+{n: "ASTLEY MARCUS JB90", t: "premium", c: "legendary", cn: {ar: "أسطوري", en: "Legendary"}, b: "ASTLEY", p: 5000000, rt: "premium"},
+{n: "BEAST POISON GT", t: "premium", c: "legendary", cn: {ar: "أسطوري", en: "Legendary"}, b: "BEAST", p: 5000000, rt: "premium"},
+{n: "CHEREAU CORSAIRE VII", t: "premium", c: "legendary", cn: {ar: "أسطوري", en: "Legendary"}, b: "CHEREAU", p: 5000000, rt: "premium"},
+{n: "ALBRECHT GRIFFIN", t: "premium", c: "legendary", cn: {ar: "أسطوري", en: "Legendary"}, b: "ALBRECHT", p: 4750000, rt: "premium"},
+{n: "AGNELLI CONCORRENZA", t: "premium", c: "legendary", cn: {ar: "أسطوري", en: "Legendary"}, b: "AGNELLI", p: 4500000, rt: "premium"},
+{n: "ALBRECHT REPTILE ROADSTER", t: "premium", c: "legendary", cn: {ar: "أسطوري", en: "Legendary"}, b: "ALBRECHT", p: 4500000, rt: "premium"},
+{n: "MATHILDE MEISTER ICONIC", t: "premium", c: "legendary", cn: {ar: "أسطوري", en: "Legendary"}, b: "MATHILDE", p: 4500000, rt: "premium"},
+{n: "CAVELIER CASCADE PREMIUM", t: "premium", c: "legendary", cn: {ar: "أسطوري", en: "Legendary"}, b: "CAVELIER", p: 4500000, rt: "premium"},
+{n: "ALBRECHT 999 SPYDER", t: "premium", c: "legendary", cn: {ar: "أسطوري", en: "Legendary"}, b: "ALBRECHT", p: 5000000, rt: "premium"},
+{n: "ALBRECHT AGILLA", t: "premium", c: "legendary", cn: {ar: "أسطوري", en: "Legendary"}, b: "ALBRECHT", p: 4000000, rt: "premium"},
+{n: "BEAST QRT XMAS", t: "premium", c: "legendary", cn: {ar: "أسطوري", en: "Legendary"}, b: "BEAST", p: 2100000, rt: "premium"},
+{n: "RADDLER 3000", t: "premium", c: "legendary", cn: {ar: "أسطوري", en: "Legendary"}, b: "RADDLER", p: 2500000, rt: "premium"},
+{n: "LYNX FEROX", t: "premium", c: "legendary", cn: {ar: "أسطوري", en: "Legendary"}, b: "LYNX", p: 3500000, rt: "premium"},
+{n: "FUDGE LIBERTY STRIPEBURN", t: "premium", c: "legendary", cn: {ar: "أسطوري", en: "Legendary"}, b: "FUDGE", p: 2750000, rt: "premium"},
+{n: "CHEREAU CORSAIRE", t: "premium", c: "legendary", cn: {ar: "أسطوري", en: "Legendary"}, b: "CHEREAU", p: 3000000, rt: "premium"},
+{n: "ALBRECHT AGILLA LEGENDARY", t: "premium", c: "legendary", cn: {ar: "أسطوري", en: "Legendary"}, b: "ALBRECHT", p: 3500000, rt: "premium"},
+{n: "BOMBER G4 PACE", t: "premium", c: "legendary", cn: {ar: "أسطوري", en: "Legendary"}, b: "BOMBER", p: 5000000, rt: "premium"},
+{n: "AURO RAZOR", t: "premium", c: "legendary", cn: {ar: "أسطوري", en: "Legendary"}, b: "AURO", p: 2500000, rt: "premium"},
+{n: "CHEREAU HORNET RR", t: "premium", c: "epic", cn: {ar: "ملحمي", en: "Epic"}, b: "CHEREAU", p: 1750000, rt: "premium"},
+{n: "BOMBER B20", t: "premium", c: "epic", cn: {ar: "ملحمي", en: "Epic"}, b: "BOMBER", p: 2250000, rt: "premium"},
+{n: "LYNX GTB", t: "premium", c: "epic", cn: {ar: "ملحمي", en: "Epic"}, b: "LYNX", p: 2500000, rt: "premium"},
+{n: "TAKADA SAIKOU X", t: "premium", c: "epic", cn: {ar: "ملحمي", en: "Epic"}, b: "TAKADA", p: 2400000, rt: "premium"},
+{n: "BOMBER B40 GTR", t: "premium", c: "epic", cn: {ar: "ملحمي", en: "Epic"}, b: "BOMBER", p: 2100000, rt: "premium"},
+{n: "NIMROD GRANGER 4X4", t: "premium", c: "epic", cn: {ar: "ملحمي", en: "Epic"}, b: "NIMROD", p: 2100000, rt: "premium"},
+{n: "HUNTSMAN ASSERTOR", t: "premium", c: "epic", cn: {ar: "ملحمي", en: "Epic"}, b: "HUNTSMAN", p: 2100000, rt: "premium"},
+{n: "AGNELLI FIREFLY", t: "premium", c: "epic", cn: {ar: "ملحمي", en: "Epic"}, b: "AGNELLI", p: 2000000, rt: "premium"},
+{n: "NIMROD MARKSMAN", t: "premium", c: "epic", cn: {ar: "ملحمي", en: "Epic"}, b: "NIMROD", p: 2000000, rt: "premium"},
+{n: "BOMBER B90", t: "premium", c: "epic", cn: {ar: "ملحمي", en: "Epic"}, b: "BOMBER", p: 2000000, rt: "premium"},
+{n: "FUDGE STRIKER", t: "premium", c: "epic", cn: {ar: "ملحمي", en: "Epic"}, b: "FUDGE", p: 1900000, rt: "premium"},
+{n: "BOSWELL SUPERSPORT 427", t: "premium", c: "epic", cn: {ar: "ملحمي", en: "Epic"}, b: "BOSWELL", p: 1900000, rt: "premium"},
+{n: "CAVELIER CASCADE", t: "premium", c: "epic", cn: {ar: "ملحمي", en: "Epic"}, b: "CAVELIER", p: 1900000, rt: "premium"},
+{n: "CHEREAU DOMINO", t: "premium", c: "epic", cn: {ar: "ملحمي", en: "Epic"}, b: "CHEREAU", p: 1900000, rt: "premium"},
+{n: "AGNELLI VIOLINO", t: "premium", c: "epic", cn: {ar: "ملحمي", en: "Epic"}, b: "AGNELLI", p: 1950000, rt: "premium"},
+{n: "BOMBER G5", t: "premium", c: "epic", cn: {ar: "ملحمي", en: "Epic"}, b: "BOMBER", p: 1850000, rt: "premium"},
+{n: "BEAST QRT", t: "premium", c: "epic", cn: {ar: "ملحمي", en: "Epic"}, b: "BEAST", p: 1800000, rt: "premium"},
+{n: "CHEREAU ANTELOPE", t: "premium", c: "epic", cn: {ar: "ملحمي", en: "Epic"}, b: "CHEREAU", p: 1750000, rt: "premium"},
+{n: "FUDGE CHIEF", t: "premium", c: "epic", cn: {ar: "ملحمي", en: "Epic"}, b: "FUDGE", p: 1750000, rt: "premium"},
+{n: "AGNELLI LUCIA", t: "premium", c: "epic", cn: {ar: "ملحمي", en: "Epic"}, b: "AGNELLI", p: 1750000, rt: "premium"},
+{n: "AURO RR CABRIO", t: "premium", c: "epic", cn: {ar: "ملحمي", en: "Epic"}, b: "AURO", p: 1750000, rt: "premium"},
+{n: "TAKADA LANDSTALKER", t: "premium", c: "epic", cn: {ar: "ملحمي", en: "Epic"}, b: "TAKADA", p: 1700000, rt: "premium"},
+{n: "MATSU RE-70", t: "premium", c: "epic", cn: {ar: "ملحمي", en: "Epic"}, b: "MATSU", p: 1700000, rt: "premium"},
+{n: "BEAST SUPERCHARGED", t: "premium", c: "epic", cn: {ar: "ملحمي", en: "Epic"}, b: "BEAST", p: 1600000, rt: "premium"},
+{n: "MATHILDE ABTEIL", t: "premium", c: "epic", cn: {ar: "ملحمي", en: "Epic"}, b: "MATHILDE", p: 1500000, rt: "premium"},
+{n: "AURO X7", t: "premium", c: "epic", cn: {ar: "ملحمي", en: "Epic"}, b: "AURO", p: 1400000, rt: "premium"},
+{n: "HUNTSMAN PRAXIS", t: "premium", c: "epic", cn: {ar: "ملحمي", en: "Epic"}, b: "HUNTSMAN", p: 1300000, rt: "premium"},
+{n: "SUZUNE TYPHOON GT", t: "premium", c: "epic", cn: {ar: "ملحمي", en: "Epic"}, b: "SUZUNE", p: 1250000, rt: "premium"},
+{n: "MATHILDE MEISTER RR", t: "premium", c: "epic", cn: {ar: "ملحمي", en: "Epic"}, b: "MATHILDE", p: 1250000, rt: "premium"},
+{n: "AGNELLI VELLA", t: "premium", c: "epic", cn: {ar: "ملحمي", en: "Epic"}, b: "AGNELLI", p: 1350000, rt: "premium"},
+{n: "LUXOR KOSOKU", t: "premium", c: "epic", cn: {ar: "ملحمي", en: "Epic"}, b: "LUXOR", p: 1250000, rt: "premium"},
+{n: "CHEREAU CABRILLO", t: "premium", c: "epic", cn: {ar: "ملحمي", en: "Epic"}, b: "CHEREAU", p: 1350000, rt: "premium"},
+{n: "MIYAHIRA TWILIGHT", t: "premium", c: "epic", cn: {ar: "ملحمي", en: "Epic"}, b: "MIYAHIRA", p: 1200000, rt: "premium"},
+{n: "BOMBER C20 COUPE", t: "premium", c: "epic", cn: {ar: "ملحمي", en: "Epic"}, b: "BOMBER", p: 1250000, rt: "premium"},
+{n: "BOMBER SPEEDY", t: "premium", c: "epic", cn: {ar: "ملحمي", en: "Epic"}, b: "BOMBER", p: 1200000, rt: "premium"},
+{n: "HARADA CONCORD", t: "premium", c: "epic", cn: {ar: "ملحمي", en: "Epic"}, b: "HARADA", p: 1200000, rt: "premium"},
+{n: "BOMBER B50", t: "premium", c: "epic", cn: {ar: "ملحمي", en: "Epic"}, b: "BOMBER", p: 1175000, rt: "premium"},
+{n: "TAKADA RS90", t: "premium", c: "epic", cn: {ar: "ملحمي", en: "Epic"}, b: "TAKADA", p: 1125000, rt: "premium"},
+{n: "VOLKSMANN SEXTIO", t: "premium", c: "epic", cn: {ar: "ملحمي", en: "Epic"}, b: "VOLKSMANN", p: 1100000, rt: "premium"},
+{n: "FUDGE DINO", t: "premium", c: "epic", cn: {ar: "ملحمي", en: "Epic"}, b: "FUDGE", p: 1100000, rt: "premium"},
+{n: "AURO TRACER", t: "premium", c: "epic", cn: {ar: "ملحمي", en: "Epic"}, b: "AURO", p: 1100000, rt: "premium"},
+{n: "BOMBER E92", t: "premium", c: "epic", cn: {ar: "ملحمي", en: "Epic"}, b: "BOMBER", p: 1100000, rt: "premium"},
+{n: "LUXOR HAYAI", t: "premium", c: "epic", cn: {ar: "ملحمي", en: "Epic"}, b: "LUXOR", p: 1050000, rt: "premium"},
+{n: "TEENY BANTAM S", t: "premium", c: "epic", cn: {ar: "ملحمي", en: "Epic"}, b: "TEENY", p: 1120000, rt: "premium"},
+{n: "HARADA OVERTURE", t: "premium", c: "epic", cn: {ar: "ملحمي", en: "Epic"}, b: "HARADA", p: 750000, rt: "premium"},
+{n: "LUXOR KAITEKI", t: "premium", c: "epic", cn: {ar: "ملحمي", en: "Epic"}, b: "LUXOR", p: 950000, rt: "premium"},
+{n: "TAKADA PURSUER GT-S", t: "premium", c: "epic", cn: {ar: "ملحمي", en: "Epic"}, b: "TAKADA", p: 1100000, rt: "premium"},
+{n: "TAKADA SAIKOU TURBO", t: "premium", c: "epic", cn: {ar: "ملحمي", en: "Epic"}, b: "TAKADA", p: 1100000, rt: "premium"},
+{n: "FUJITA LINE 33 GT", t: "premium", c: "epic", cn: {ar: "ملحمي", en: "Epic"}, b: "FUJITA", p: 750000, rt: "premium"},
+{n: "MATSU RE-50", t: "economy", c: "epic", cn: {ar: "ملحمي", en: "Epic"}, b: "MATSU", p: 800000, rt: "economy"},
+{n: "TAKADA GUARDIAN VX7", t: "economy", c: "epic", cn: {ar: "ملحمي", en: "Epic"}, b: "TAKADA", p: 700000, rt: "economy"},
+{n: "ONJO PROMMENSE", t: "economy", c: "rare", cn: {ar: "نادر", en: "Rare"}, b: "ONJO", p: 550000, rt: "economy"},
+{n: "FUJITA REQUIEM GT-X", t: "economy", c: "rare", cn: {ar: "نادر", en: "Rare"}, b: "FUJITA", p: 600000, rt: "economy"},
+{n: "CHEREAU MONACO", t: "economy", c: "rare", cn: {ar: "نادر", en: "Rare"}, b: "CHEREAU", p: 500000, rt: "economy"},
+{n: "FUJITA SAKURA", t: "economy", c: "rare", cn: {ar: "نادر", en: "Rare"}, b: "FUJITA", p: 500000, rt: "economy"},
+{n: "CAVELIER GRACE", t: "economy", c: "rare", cn: {ar: "نادر", en: "Rare"}, b: "CAVELIER", p: 450000, rt: "economy"},
+{n: "VOLKSMANN STREAM MK.6", t: "economy", c: "rare", cn: {ar: "نادر", en: "Rare"}, b: "VOLKSMANN", p: 450000, rt: "economy"},
+{n: "CHEREAU GRAND MOUNT", t: "economy", c: "rare", cn: {ar: "نادر", en: "Rare"}, b: "CHEREAU", p: 350000, rt: "economy"},
+{n: "BOMBER E30", t: "economy", c: "rare", cn: {ar: "نادر", en: "Rare"}, b: "BOMBER", p: 350000, rt: "economy"},
+{n: "HARADA TYPE-S", t: "economy", c: "rare", cn: {ar: "نادر", en: "Rare"}, b: "HARADA", p: 350000, rt: "economy"},
+{n: "CHEREAU YOSEMITE", t: "economy", c: "rare", cn: {ar: "نادر", en: "Rare"}, b: "CHEREAU", p: 350000, rt: "economy"},
+{n: "TAKADA LANDSTALKER PRIMO", t: "economy", c: "rare", cn: {ar: "نادر", en: "Rare"}, b: "TAKADA", p: 340000, rt: "economy"},
+{n: "FUDGE QUEEN", t: "economy", c: "rare", cn: {ar: "نادر", en: "Rare"}, b: "FUDGE", p: 325000, rt: "economy"},
+{n: "MIYAHIRA EVOLVE X", t: "economy", c: "rare", cn: {ar: "نادر", en: "Rare"}, b: "MIYAHIRA", p: 300000, rt: "economy"},
+{n: "TAKADA FUJIWARA GT", t: "economy", c: "rare", cn: {ar: "نادر", en: "Rare"}, b: "TAKADA", p: 250000, rt: "economy"},
+{n: "MATSU 6", t: "economy", c: "rare", cn: {ar: "نادر", en: "Rare"}, b: "MATSU", p: 225000, rt: "economy"},
+{n: "VOLKSMANN MONSOON", t: "economy", c: "rare", cn: {ar: "نادر", en: "Rare"}, b: "VOLKSMANN", p: 190000, rt: "economy"},
+{n: "FUDGE DIRECT", t: "economy", c: "rare", cn: {ar: "نادر", en: "Rare"}, b: "FUDGE", p: 175000, rt: "economy"},
+{n: "TAKADA GUARDIAN VX4", t: "economy", c: "rare", cn: {ar: "نادر", en: "Rare"}, b: "TAKADA", p: 150000, rt: "economy"},
+{n: "PERRAULT 220", t: "economy", c: "rare", cn: {ar: "نادر", en: "Rare"}, b: "PERRAULT", p: 125000, rt: "economy"},
+{n: "HARADA CIVILIAN", t: "economy", c: "rare", cn: {ar: "نادر", en: "Rare"}, b: "HARADA", p: 75000, rt: "economy"},
+{n: "AGNELLI LADYBIRD CROSS", t: "economy", c: "rare", cn: {ar: "نادر", en: "Rare"}, b: "AGNELLI", p: 375000, rt: "economy"},
+{n: "FUJITA PRISM", t: "economy", c: "rare", cn: {ar: "نادر", en: "Rare"}, b: "FUJITA", p: 375000, rt: "economy"},
+{n: "PALOMINO ARROW", t: "economy", c: "rare", cn: {ar: "نادر", en: "Rare"}, b: "PALOMINO", p: 225000, rt: "economy"},
+{n: "PERRAULT LILI TOURER", t: "economy", c: "uncommon", cn: {ar: "غير شائع", en: "Uncommon"}, b: "PERRAULT", p: 75000, rt: "economy"},
+{n: "TAKADA CHARITA", t: "economy", c: "uncommon", cn: {ar: "غير شائع", en: "Uncommon"}, b: "TAKADA", p: 60000, rt: "economy"},
+{n: "TAKADA AVALANCHE 4X4", t: "economy", c: "uncommon", cn: {ar: "غير شائع", en: "Uncommon"}, b: "TAKADA", p: 50000, rt: "economy"},
+{n: "TAKADA KAME", t: "economy", c: "uncommon", cn: {ar: "غير شائع", en: "Uncommon"}, b: "TAKADA", p: 45000, rt: "economy"},
+{n: "FUDGE CONQUEROR", t: "economy", c: "uncommon", cn: {ar: "غير شائع", en: "Uncommon"}, b: "FUDGE", p: 45000, rt: "economy"},
+{n: "CHEREAU CROSSEL", t: "economy", c: "uncommon", cn: {ar: "غير شائع", en: "Uncommon"}, b: "CHEREAU", p: 42500, rt: "economy"},
+{n: "TAZ BAIKAL", t: "economy", c: "uncommon", cn: {ar: "غير شائع", en: "Uncommon"}, b: "TAZ", p: 42500, rt: "economy"},
+{n: "AGNELLI CESTINO", t: "economy", c: "uncommon", cn: {ar: "غير شائع", en: "Uncommon"}, b: "AGNELLI", p: 37500, rt: "economy"},
+{n: "TAZ RIGA", t: "economy", c: "uncommon", cn: {ar: "غير شائع", en: "Uncommon"}, b: "TAZ", p: 25000, rt: "economy"},
+{n: "BOSWELL ALDERMAN", t: "economy", c: "uncommon", cn: {ar: "غير شائع", en: "Uncommon"}, b: "BOSWELL", p: 25000, rt: "economy"},
+{n: "BOMBER MONOLITH G7", t: "premium", c: "epic", cn: {ar: "ملحمي", en: "Epic"}, b: "BOMBER", p: 2200000, rt: "premium"},
+{n: "BOMBER STEIN G2", t: "premium", c: "epic", cn: {ar: "ملحمي", en: "Epic"}, b: "BOMBER", p: 1150000, rt: "premium"},
+{n: "BOMBER IBV", t: "premium", c: "epic", cn: {ar: "ملحمي", en: "Epic"}, b: "BOMBER", p: 2400000, rt: "premium"},
+{n: "LYNX WHIPPER", t: "premium", c: "epic", cn: {ar: "ملحمي", en: "Epic"}, b: "LYNX", p: 2000000, rt: "premium"},
+{n: "MATHILDE PARADIGM", t: "premium", c: "epic", cn: {ar: "ملحمي", en: "Epic"}, b: "MATHILDE", p: 1450000, rt: "premium"},
+{n: "MATHILDE EXCELSIOR", t: "premium", c: "epic", cn: {ar: "ملحمي", en: "Epic"}, b: "MATHILDE", p: 1750000, rt: "premium"},
+{n: "FUDGE GT600", t: "premium", c: "epic", cn: {ar: "ملحمي", en: "Epic"}, b: "FUDGE", p: 1900000, rt: "premium"},
+{n: "PALOMINO PHOENIX", t: "premium", c: "epic", cn: {ar: "ملحمي", en: "Epic"}, b: "PALOMINO", p: 1900000, rt: "premium"},
+{n: "BOMBER G4", t: "premium", c: "epic", cn: {ar: "ملحمي", en: "Epic"}, b: "BOMBER", p: 2250000, rt: "premium"},
+{n: "MERIDEN RIDGEWAY", t: "premium", c: "epic", cn: {ar: "ملحمي", en: "Epic"}, b: "MERIDEN", p: 3000000, rt: "premium"},
+{n: "DMT NOMAD", t: "premium", c: "epic", cn: {ar: "ملحمي", en: "Epic"}, b: "DMT", p: 1350000, rt: "premium"},
+
+{n: "TAZ TSAR", t: "economy", c: "rare", cn: {ar: "نادر", en: "Rare"}, b: "TAZ", p: 500000, rt: "economy"},
+{n: "BEAST BUFFALO 4X4", t: "premium", c: "epic", cn: {ar: "ملحمي", en: "Epic"}, b: "BEAST", p: 1100000, rt: "premium"},
+{n: "BOMBER E30 THRASHER", t: "premium", c: "epic", cn: {ar: "ملحمي", en: "Epic"}, b: "BOMBER", p: 1000000, rt: "premium"},
+{n: "MIYAHIRA TSUBASA 3000", t: "premium", c: "epic", cn: {ar: "ملحمي", en: "Epic"}, b: "MIYAHIRA", p: 1600000, rt: "premium"},
+{n: "VOLKSMANN INGENON", t: "premium", c: "epic", cn: {ar: "ملحمي", en: "Epic"}, b: "VOLKSMANN", p: 2300000, rt: "premium"},
+{n: "FUJITA LINE 34", t: "premium", c: "epic", cn: {ar: "ملحمي", en: "Epic"}, b: "FUJITA", p: 900000, rt: "premium"},
+{n: "LUXOR GOKANA", t: "premium", c: "epic", cn: {ar: "ملحمي", en: "Epic"}, b: "LUXOR", p: 950000, rt: "premium"},
+{n: "CHEREAU DOBBIN", t: "premium", c: "epic", cn: {ar: "ملحمي", en: "Epic"}, b: "CHEREAU", p: 1600000, rt: "premium"},
+{n: "LYNX NEXUS", t: "premium", c: "epic", cn: {ar: "ملحمي", en: "Epic"}, b: "LYNX", p: 2250000, rt: "premium"},
+{n: "TAKADA RS90 WAIZU", t: "premium", c: "epic", cn: {ar: "ملحمي", en: "Epic"}, b: "TAKADA", p: 1500000, rt: "premium"},
+{n: "CHEREAU ANTELOPE LOWRIDER", t: "", c: "epic", cn: {ar: "ملحمي", en: "Epic"}, b: "CHEREAU", p: 2250000, rt: "premium"},
+{n: "FUDGE REVOLVER", t: "economy", c: "rare", cn: {ar: "نادر", en: "Rare"}, b: "FUDGE", p: 400000, rt: "economy"},
+{n: "PALOMINO STAR", t: "premium", c: "epic", cn: {ar: "ملحمي", en: "Epic"}, b: "PALOMINO", p: 1900000, rt: "premium"},
+{n: "BOMBER B30", t: "premium", c: "epic", cn: {ar: "ملحمي", en: "Epic"}, b: "BOMBER", p: 1000000, rt: "premium"},
+{n: "RADDLER GRAVESTONE", t: "premium", c: "epic", cn: {ar: "ملحمي", en: "Epic"}, b: "RADDLER", p: 1950000, rt: "premium"},
+{n: "TAKADA FUJIWARA TOFU DELIVERY", t: "premium", c: "epic", cn: {ar: "ملحمي", en: "Epic"}, b: "TAKADA", p: 1350000, rt: "premium"},
+{n: "HARADA TOUGE RSR", t: "premium", c: "epic", cn: {ar: "ملحمي", en: "Epic"}, b: "HARADA", p: 2100000, rt: "premium"},
+{n: "PERRAULT G200", t: "premium", c: "epic", cn: {ar: "ملحمي", en: "Epic"}, b: "PERRAULT", p: 1800000, rt: "premium"},
+{n: "BEAST JEROBOAM", t: "premium", c: "epic", cn: {ar: "ملحمي", en: "Epic"}, b: "BEAST", p: 1100000, rt: "premium"},
+{n: "BOMBER B60", t: "premium", c: "epic", cn: {ar: "ملحمي", en: "Epic"}, b: "BOMBER", p: 2000000, rt: "premium"},
+{n: "AURO SHADE", t: "premium", c: "epic", cn: {ar: "ملحمي", en: "Epic"}, b: "AURO", p: 1900000, rt: "premium"},
+{n: "FUDGE SCOUT", t: "premium", c: "epic", cn: {ar: "ملحمي", en: "Epic"}, b: "FUDGE", p: 2000000, rt: "premium"},
+{n: "LYNX FUMES", t: "premium", c: "epic", cn: {ar: "ملحمي", en: "Epic"}, b: "LYNX", p: 2250000, rt: "premium"},
+{n: "MAGNANI TRASLOCO", t: "premium", c: "epic", cn: {ar: "ملحمي", en: "Epic"}, b: "MAGNANI", p: 2550000, rt: "premium"},
+{n: "BEAST WINGER", t: "premium", c: "legendary", cn: {ar: "أسطوري", en: "Legendary"}, b: "BEAST", p: 9000000, rt: "premium"},
+{n: "MATHILDE RASCH", t: "premium", c: "legendary", cn: {ar: "أسطوري", en: "Legendary"}, b: "MATHILDE", p: 9250000, rt: "premium"},
+{n: "ALBRECHT AGILLA BLIZZARD", t: "premium", c: "legendary", cn: {ar: "أسطوري", en: "Legendary"}, b: "ALBRECHT", p: 4500000, rt: "premium"},
+{n: "AGNELLI ESERZIO", t: "premium", c: "legendary", cn: {ar: "أسطوري", en: "Legendary"}, b: "AGNELLI", p: 5250000, rt: "premium"},
+{n: "LYNX CHRONOS", t: "premium", c: "legendary", cn: {ar: "أسطوري", en: "Legendary"}, b: "LYNX", p: 8000000, rt: "premium"},
+{n: "CHEREAU CORSAIRE VIII", t: "premium", c: "legendary", cn: {ar: "أسطوري", en: "Legendary"}, b: "CHEREAU", p: 7500000, rt: "premium"},
+{n: "CHEREAU HORNET SPEEDRING", t: "premium", c: "legendary", cn: {ar: "أسطوري", en: "Legendary"}, b: "CHEREAU", p: 9000000, rt: "premium"},
+{n: "ALBRECHT METEOR", t: "premium", c: "legendary", cn: {ar: "أسطوري", en: "Legendary"}, b: "ALBRECHT", p: 7000000, rt: "premium"},
+{n: "LUXOR HARUMI", t: "premium", c: "legendary", cn: {ar: "أسطوري", en: "Legendary"}, b: "LUXOR", p: 5000000, rt: "premium"},
+{n: "FUDGE TAIPAN", t: "premium", c: "legendary", cn: {ar: "أسطوري", en: "Legendary"}, b: "FUDGE", p: 6250000, rt: "premium"},
+{n: "FUDGE T150", t: "premium", c: "legendary", cn: {ar: "أسطوري", en: "Legendary"}, b: "FUDGE", p: 11000000, rt: "premium"},
+{n: "MATSU RE-250", t: "premium", c: "legendary", cn: {ar: "أسطوري", en: "Legendary"}, b: "MATSU", p: 8500000, rt: "premium"},
+{n: "MATHILDE SENTINEL", t: "premium", c: "legendary", cn: {ar: "أسطوري", en: "Legendary"}, b: "MATHILDE", p: 10000000, rt: "premium"},
+{n: "ASTLEY MARCUS JB100 SPYDER", t: "premium", c: "legendary", cn: {ar: "أسطوري", en: "Legendary"}, b: "ASTLEY", p: 7500000, rt: "premium"},
+{n: "ASTLEY MARCUS HADES", t: "premium", c: "legendary", cn: {ar: "أسطوري", en: "Legendary"}, b: "ASTLEY", p: 6000000, rt: "premium"},
+{n: "MCQUEEN SHANK", t: "premium", c: "legendary", cn: {ar: "أسطوري", en: "Legendary"}, b: "MCQUEEN", p: 12150000, rt: "premium"},
+{n: "BOSWELL ETUDE", t: "premium", c: "legendary", cn: {ar: "أسطوري", en: "Legendary"}, b: "BOSWELL", p: 15000000, rt: "premium"},
+{n: "FERRINI LAFERRINI", t: "premium", c: "secret", cn: {ar: "سري", en: "Secret"}, b: "FERRINI", p: 27500000, rt: "premium"},
+{n: "MCQUEEN LUMINOUS", t: "premium", c: "secret", cn: {ar: "سري", en: "Secret"}, b: "MCQUEEN", p: 28000000, rt: "premium"},
+{n: "FERRINI ILARIA", t: "premium", c: "secret", cn: {ar: "سري", en: "Secret"}, b: "FERRINI", p: 17500000, rt: "premium"},
+{n: "BEAST POISON GEN-2 BASILISK", t: "premium", c: "secret", cn: {ar: "سري", en: "Secret"}, b: "BEAST", p: 15000000, rt: "premium"},
+{n: "FERRINI BARCHETTA SR", t: "premium", c: "secret", cn: {ar: "سري", en: "Secret"}, b: "FERRINI", p: 20000000, rt: "premium"},
+{n: "LYNX KHAN", t: "premium", c: "secret", cn: {ar: "سري", en: "Secret"}, b: "LYNX", p: 13500000, rt: "premium"},
+{n: "KRONANSVAG STORMBRINGER", t: "premium", c: "secret", cn: {ar: "سري", en: "Secret"}, b: "KRONANSVAG", p: 15000000, rt: "premium"},
+{n: "FERRINI FARFALLA", t: "premium", c: "secret", cn: {ar: "سري", en: "Secret"}, b: "FERRINI", p: 20000000, rt: "premium"},
+{n: "MCQUEEN ROCKETFOX", t: "premium", c: "secret", cn: {ar: "سري", en: "Secret"}, b: "MCQUEEN", p: 26000000, rt: "premium"},
+{n: "FERRINI BELLO", t: "premium", c: "secret", cn: {ar: "سري", en: "Secret"}, b: "FERRINI", p: 11500000, rt: "premium"},
+{n: "RADDLER LINER", t: "premium", c: "secret", cn: {ar: "سري", en: "Secret"}, b: "RADDLER", p: 31500000, rt: "premium"},
+{n: "FERRINI VELOCITA", t: "premium", c: "secret", cn: {ar: "سري", en: "Secret"}, b: "FERRINI", p: 23500000, rt: "premium"},
+{n: "CAVELIER C-SERIES", t: "premium", c: "epic", cn: {ar: "ملحمي", en: "Epic"}, b: "CAVELIER", p: 1150000, rt: "premium"},
+{n: "CHEREAU BULLDOG 1971", t: "premium", c: "epic", cn: {ar: "ملحمي", en: "Epic"}, b: "CHEREAU", p: 1250000, rt: "premium"},
+{n: "LYNX GTB SPORT", t: "premium", c: "epic", cn: {ar: "ملحمي", en: "Epic"}, b: "LYNX", p: 3000000, rt: "premium"},
+{n: "FUDGE LIBERTY", t: "premium", c: "epic", cn: {ar: "ملحمي", en: "Epic"}, b: "FUDGE", p: 1500000, rt: "premium"},
+{n: "PALOMINO NEGOTIATOR GT", t: "premium", c: "epic", cn: {ar: "ملحمي", en: "Epic"}, b: "PALOMINO", p: 2100000, rt: "premium"},
+{n: "BOMBER E31", t: "premium", c: "epic", cn: {ar: "ملحمي", en: "Epic"}, b: "BOMBER", p: 2100000, rt: "premium"},
+{n: "TAKADA RHINO", t: "premium", c: "legendary", cn: {ar: "أسطوري", en: "Legendary"}, b: "TAKADA", p: 11000000, rt: "premium"},
+{n: "BARNETT CAESAR", t: "premium", c: "secret", cn: {ar: "سري", en: "Secret"}, b: "BARNETT", p: 12000000, rt: "premium"},
+{n: "MATHILDE KOMMISSAR 6X6", t: "premium", c: "secret", cn: {ar: "سري", en: "Secret"}, b: "MATHILDE", p: 14250000, rt: "premium"},
+{n: "ELEGANTE AVANTI", t: "premium", c: "secret", cn: {ar: "سري", en: "Secret"}, b: "ELEGANTE", p: 25000000, rt: "premium"},
+{n: "MATHILDE ZENITH VANGUARD SERIE", t: "premium", c: "secret", cn: {ar: "سري", en: "Secret"}, b: "MATHILDE", p: 12500000, rt: "premium"},
+{n: "MATHILDE SR600", t: "premium", c: "secret", cn: {ar: "سري", en: "Secret"}, b: "MATHILDE", p: 11000000, rt: "premium"},
+{n: "ASTLEY MARCUS GLADIATOR", t: "premium", c: "secret", cn: {ar: "سري", en: "Secret"}, b: "ASTLEY", p: 22500000, rt: "premium"},
+{n: "BARNETT ILLUSION", t: "premium", c: "secret", cn: {ar: "سري", en: "Secret"}, b: "BARNETT", p: 17500000, rt: "premium"},
+{n: "MATHILDE MIRAGE", t: "premium", c: "secret", cn: {ar: "سري", en: "Secret"}, b: "MATHILDE", p: 25000000, rt: "premium"},
+{n: "VOLKSMANN SAO PAULO", t: "economy", c: "rare", cn: {ar: "نادر", en: "Rare"}, b: "VOLKSMANN", p: 300000, rt: "economy"},
+{n: "FUDGE CHIEF NIGHTHAWK", t: "premium", c: "epic", cn: {ar: "ملحمي", en: "Epic"}, b: "FUDGE", p: 2100000, rt: "premium"},
+{n: "FUDGE STRIKER BOOST", t: "premium", c: "epic", cn: {ar: "ملحمي", en: "Epic"}, b: "FUDGE", p: 2450000, rt: "premium"},
+{n: "PALOMINO PHOENIX HW EDITION", t: "premium", c: "legendary", cn: {ar: "أسطوري", en: "Legendary"}, b: "PALOMINO", p: 6000000, rt: "premium"},
+{n: "HARADA TOUGE XR", t: "premium", c: "secret", cn: {ar: "سري", en: "Secret"}, b: "HARADA", p: 13500000, rt: "premium"},
+{n: "ELEGANTE URSA VERTIGO", t: "premium", c: "legendary", cn: {ar: "أسطوري", en: "Legendary"}, b: "ELEGANTE", p: 12000000, rt: "premium"},
+{n: "MATSU 33", t: "economy", c: "rare", cn: {ar: "نادر", en: "Rare"}, b: "MATSU", p: 225000, rt: "economy"},
+{n: "BEAST INVADER T/A", t: "premium", c: "epic", cn: {ar: "ملحمي", en: "Epic"}, b: "BEAST", p: 2000000, rt: "premium"},
+{n: "MCQUEEN X50", t: "premium", c: "secret", cn: {ar: "سري", en: "Secret"}, b: "MCQUEEN", p: 32500000, rt: "premium"},
+{n: "CAVELIER BLANKOS", t: "economy", c: "rare", cn: {ar: "نادر", en: "Rare"}, b: "CAVELIER", p: 300000, rt: "economy"},
+{n: "TAKADA RONIN", t: "economy", c: "rare", cn: {ar: "نادر", en: "Rare"}, b: "TAKADA", p: 325000, rt: "economy"},
+{n: "CHEREAU HAWK X9", t: "premium", c: "legendary", cn: {ar: "أسطوري", en: "Legendary"}, b: "CHEREAU", p: 8000000, rt: "premium"},
+{n: "FERRINI 240GT", t: "premium", c: "secret", cn: {ar: "سري", en: "Secret"}, b: "FERRINI", p: 13500000, rt: "premium"},
+{n: "ELEGANTE VITTORIA SPYDER", t: "premium", c: "secret", cn: {ar: "سري", en: "Secret"}, b: "ELEGANTE", p: 20000000, rt: "premium"},
+{n: "MATHILDE SIGRUN", t: "premium", c: "secret", cn: {ar: "سري", en: "Secret"}, b: "MATHILDE", p: 30000000, rt: "premium"},
+{n: "MIYAHIRA BYAKKO", t: "premium", c: "epic", cn: {ar: "ملحمي", en: "Epic"}, b: "MIYAHIRA", p: 900000, rt: "premium"},
+
+{n: "MCOUEEN TURBO CLUTCH", t: "premium", c: "secret", cn: {ar: "سري", en: "Secret"}, b: "MCQUEEN", p: 13000000, rt: "premium"},
+{n: "RUCATI RENAISSANCE", t: "premium", c: "legendary", cn: {ar: "أسطوري", en: "Legendary"}, b: "RUCATI", p: 15000000, rt: "premium"},
+{n: "ELEGANTE LIDERE", t: "premium", c: "secret", cn: {ar: "سري", en: "Secret"}, b: "ELEGANTE", p: 30000000, rt: "premium"},
+{n: "Fudge Velocentre", t: "premium", c: "secret", cn: {ar: "سري", en: "Secret"}, b: "FUDGE", p: 37500000, rt: "premium"},
+
+{n: "CHEREAU ANTELOPE GATILLERO", t: "premium", c: "secret", cn: {ar: "سري", en: "Secret"}, b: "CHEREAU", p: 42500000, rt: "premium"},
+{n: "LYNX ROYALE VI", t: "premium", c: "epic", cn: {ar: "ملحمي", en: "Epic"}, b: "LYNX", p: 2250000, rt: "premium"},
+{n: "FUDGE LM-100", t: "premium", c: "legendary", cn: {ar: "أسطوري", en: "Legendary"}, b: "FUDGE", p: 11000000, rt: "premium"},
+{n: "MATHILDE ALPHA", t: "premium", c: "secret", cn: {ar: "سري", en: "Secret"}, b: "MATHILDE", p: 60000000, rt: "premium"},
+{n: "FERRINI NOVANTA", t: "premium", c: "secret", cn: {ar: "سري", en: "Secret"}, b: "FERRINI", p: 22500000, rt: "premium"},
+{n: "ALBRECHT SHAVETTE", t: "premium", c: "legendary", cn: {ar: "أسطوري", en: "Legendary"}, b: "ALBRECHT", p: 6250000, rt: "premium"},
+
+{n: "MATHILDE HEIMDALL", t: "premium", c: "epic", cn: {ar: "ملحمي", en: "Epic"}, b: "MATHILDE", p: 2850000, rt: "premium"},
+{n: "ELEGANTE SPERICOLATO", t: "premium", c: "secret", cn: {ar: "سري", en: "Secret"}, b: "ELEGANTE", p: 22500000, rt: "premium"},
+
+{n: "MIYAHIRA HUNTER EVOLUTION", t: "economy", c: "rare", cn: {ar: "نادر", en: "Rare"}, b: "MIYAHIRA", p: 650000, rt: "economy"},
+{n: "HARADA CIVILIAN GEN 2", t: "economy", c: "rare", cn: {ar: "نادر", en: "Rare"}, b: "HARADA", p: 275000, rt: "economy"},
+{n: "HUNTSMAN PALADIN", t: "economy", c: "rare", cn: {ar: "نادر", en: "Rare"}, b: "HUNTSMAN", p: 500000, rt: "economy"},
+{n: "BOMBER ZEITGEIST", t: "economy", c: "rare", cn: {ar: "نادر", en: "Rare"}, b: "BOMBER", p: 600000, rt: "economy"},
+{n: "RADDLER PATRIOT", t: "premium", c: "epic", cn: {ar: "ملحمي", en: "Epic"}, b: "RADDLER", p: 1400000, rt: "premium"},
+
+{n: "MATHILDE NEBULA", t: "premium", c: "legendary", cn: {ar: "أسطوري", en: "Legendary"}, b: "MATHILDE", p: 5000000, rt: "premium"},
+{n: "ASTLEY MARCUS LANCELOT", t: "premium", c: "legendary", cn: {ar: "أسطوري", en: "Legendary"}, b: "ASTLEY", p: 9500000, rt: "premium"},
+{n: "FUJITA LINE 33 STREET LEGEND", t: "premium", c: "legendary", cn: {ar: "أسطوري", en: "Legendary"}, b: "FUJITA", p: 3000000, rt: "premium"},
+{n: "FUJITA LINE SUPERCHARGED", t: "premium", c: "legendary", cn: {ar: "أسطوري", en: "Legendary"}, b: "FUJITA", p: 7500000, rt: "premium"},
+{n: "FUDGE MERRY STRIKER", t: "premium", c: "epic", cn: {ar: "ملحمي", en: "Epic"}, b: "FUDGE", p: 2450000, rt: "premium"},
+{n: "FUJITA AZAMI Z30", t: "premium", c: "epic", cn: {ar: "ملحمي", en: "Epic"}, b: "FUJITA", p: 2050000, rt: "premium"},
+{n: "FUJITA R290", t: "premium", c: "epic", cn: {ar: "ملحمي", en: "Epic"}, b: "FUJITA", p: 2100000, rt: "premium"},
+{n: "FUJITA TATSU", t: "premium", c: "legendary", cn: {ar: "أسطوري", en: "Legendary"}, b: "FUJITA", p: 4500000, rt: "premium"},
+{n: "MATSU TOPAZ", t: "premium", c: "epic", cn: {ar: "ملحمي", en: "Epic"}, b: "MATSU", p: 900000, rt: "premium"},
+{n: "MATSU RE-50 FURIOUS", t: "premium", c: "epic", cn: {ar: "ملحمي", en: "Epic"}, b: "MATSU", p: 1100000, rt: "premium"},
+{n: "HARADA S200 SPORT", t: "premium", c: "epic", cn: {ar: "ملحمي", en: "Epic"}, b: "HARADA", p: 1000000, rt: "premium"},
+
+{n: "BOMBER CIO ROADSTER", t: "premium", c: "legendary", cn: {ar: "أسطوري", en: "Legendary"}, b: "BOMBER", p: 6000000, rt: "premium"},
+{n: "PERRAULT 460", t: "economy", c: "rare", cn: {ar: "نادر", en: "Rare"}, b: "PERRAULT", p: 600000, rt: "economy"},
+{n: "AGNELLI SOLO", t: "economy", c: "uncommon", cn: {ar: "غير شائع", en: "Uncommon"}, b: "AGNELLI", p: 75000, rt: "economy"},
+{n: "TAKADA SENTRY", t: "economy", c: "rare", cn: {ar: "نادر", en: "Rare"}, b: "TAKADA", p: 600000, rt: "premium"},
+{n: "TAKADA SUPERNOVA GT", t: "premium", c: "epic", cn: {ar: "ملحمي", en: "Epic"}, b: "TAKADA", p: 1150000, rt: "premium"}
+];
+
+let currentCar = null, currentType = 'all', activeBrand = '';
+
+const partsMeta = [
+{id: 'red', key: 'red', cls: 'p-red', color: '#ff3b30'},
+{id: 'gold', key: 'gold', cls: 'p-gold', color: '#ffcc00'},
+{id: 'purple', key: 'purple', cls: 'p-purple', color: '#af52de'},
+{id: 'blue', key: 'blue', cls: 'p-blue', color: '#007aff'},
+{id: 'green', key: 'green', cls: 'p-green', color: '#34c759'},
+{id: 'gray', key: 'gray', cls: 'p-gray', color: '#8e8e93'}
+];
+
+function toggleDrawer() {
+    const drawer = document.getElementById('sideDrawer');
+    const overlay = document.getElementById('drawerOverlay');
+    drawer.classList.toggle('open');
+    overlay.classList.toggle('open');
+}
+
+function toggleLanguage() {
+lang = lang === 'ar' ? 'en' : 'ar';
+const htmlRoot = document.getElementById('htmlRoot');
+htmlRoot.setAttribute('lang', lang);
+htmlRoot.setAttribute('dir', lang === 'ar' ? 'rtl' : 'ltr');
+updateTexts();
+if(activeBrand) renderCarsGrid(activeBrand);
+else renderBrands();
+if(currentCar) renderCarDetails(currentCar);
+}
+
+function updateTexts() {
+const t = translations[lang];
+document.getElementById('pageTitle').innerText = t.title;
+document.getElementById('mainTitle').innerText = t.title;
+document.getElementById('globalSearch').placeholder = t.searchPlaceholder;
+document.getElementById('btnEconomy').innerText = t.economy;
+document.getElementById('btnPremium').innerText = t.premium;
+document.getElementById('btnAll').innerText = t.all;
+document.getElementById('btnFavorites').innerText = t.favorites;
+document.getElementById('selectBrandLabel').innerText = t.selectBrand;
+document.getElementById('backToBrandsBtn').innerText = t.backToBrands;
+document.getElementById('backFromFavoritesBtn').innerText = t.backToBrands;
+document.getElementById('backToCarsBtn').innerText = t.backToCars;
+document.getElementById('lblMinStock').innerText = t.minStock;
+document.getElementById('lblRarity').innerText = t.rarityLbl;
+document.getElementById('lblEnterParts').innerText = t.enterParts;
+document.getElementById('lblHammerStock').innerText = t.hammerStock;
+document.getElementById('lblMinMod').innerText = t.minMod;
+document.getElementById('lblHammerMod').innerText = t.hammerMod;
+document.getElementById('lblVmMax').innerText = t.vmMax;
+document.getElementById('supportLinkText').innerText = t.supportText;
+document.getElementById('drawerMenuTitle').innerText = t.menuTitle;
+renderPartsInputs();
+if(!activeBrand) renderBrands();
+}
+
+function renderPartsInputs() {
+const pDict = translations[lang].parts;
+document.getElementById('partsGridInputs').innerHTML = partsMeta.map(p => `
+<div class="part-item ${p.cls}">
+<div class="part-header">
+<span style="color:${p.color}">${pDict[p.key].name}</span>
+<span style="color:${p.color}; font-size:11px;">(${pDict[p.key].code})</span>
+</div>
+<div class="counter-box">
+<button class="counter-btn" onclick="changePart('${p.id}', -1)">-</button>
+<span class="counter-value" id="val_${p.id}">${partsData[p.id]}</span>
+<button class="counter-btn" onclick="changePart('${p.id}', 1)">+</button>
+</div>
+</div>`).join('');
+}
+
+function changePart(id, delta) {
+partsData[id] = Math.max(0, Math.min(8, partsData[id] + delta));
+document.getElementById(`val_${id}`).innerText = partsData[id];
+calculate();
+}
+
+function init() {
+renderPartsInputs();
+renderBrands();
+history.replaceState({ view: 'brands' }, '');
+}
+
+window.addEventListener('popstate', function(e) {
+const state = e.state || { view: 'brands' };
+handleStateNavigation(state);
+});
+
+function handleStateNavigation(state) {
+if (state.view === 'brands') {
+    document.getElementById('carListView').style.display = 'none';
+    document.getElementById('favoritesView').style.display = 'none';
+    document.getElementById('tuningView').style.display = 'none';
+    document.getElementById('brandsView').style.display = 'block';
+    activeBrand = '';
+    currentCar = null;
+} else if (state.view === 'cars') {
+    activeBrand = state.brand;
+    document.getElementById('brandsView').style.display = 'none';
+    document.getElementById('favoritesView').style.display = 'none';
+    document.getElementById('tuningView').style.display = 'none';
+    document.getElementById('carListView').style.display = 'block';
+    document.getElementById('selectedBrandTitle').innerText = `${state.brand}`;
+    renderCarsGrid(state.brand);
+    currentCar = null;
+} else if (state.view === 'favorites') {
+    document.getElementById('brandsView').style.display = 'none';
+    document.getElementById('carListView').style.display = 'none';
+    document.getElementById('tuningView').style.display = 'none';
+    document.getElementById('favoritesView').style.display = 'block';
+    renderFavoritesGrid();
+    currentCar = null;
+} else if (state.view === 'tuning') {
+    currentCar = state.car;
+    document.getElementById('brandsView').style.display = 'none';
+    document.getElementById('carListView').style.display = 'none';
+    document.getElementById('favoritesView').style.display = 'none';
+    document.getElementById('tuningView').style.display = 'block';
+    renderCarDetails(state.car);
+}
+}
+
+function setTypeFilter(type, btn) {
+currentType = type;
+document.querySelectorAll('.type-btn').forEach(b => b.classList.remove('active'));
+btn.classList.add('active');
+const searchQuery = document.getElementById('globalSearch').value;
+if (searchQuery.trim()) {
+    globalSearchCars(searchQuery);
+} else {
+    renderBrands();
+}
+}
+
+function renderBrands() {
+const brandsGrid = document.getElementById('brandsGrid');
+const filteredCars = cars.filter(c => currentType === 'all' || c.t === currentType);
+const brands = [...new Set(filteredCars.map(c => c.b))].sort();
+
+document.getElementById('totalCarsCount').innerText = translations[lang].totalCars + filteredCars.length;
+const suffix = translations[lang].carsSuffix;
+
+brandsGrid.innerHTML = brands.map(b => {
+const count = filteredCars.filter(c => c.b === b).length;
+const countText = `(${count} ${suffix})`;
+return `
+<div class="brand-card" onclick="selectBrand('${b}')">
+<div>${b}</div>
+<div style="font-size:11px; color:#aaa; margin-top:4px;">${countText}</div>
+</div>`;
+}).join('');
+}
+
+function selectBrand(brand) {
+activeBrand = brand;
+document.getElementById('brandsView').style.display = 'none';
+document.getElementById('carListView').style.display = 'block';
+document.getElementById('selectedBrandTitle').innerText = `${brand}`;
+renderCarsGrid(brand);
+history.pushState({ view: 'cars', brand: brand }, '');
+}
+
+function showFavoritesView() {
+document.getElementById('brandsView').style.display = 'none';
+document.getElementById('carListView').style.display = 'none';
+document.getElementById('tuningView').style.display = 'none';
+document.getElementById('favoritesView').style.display = 'block';
+renderFavoritesGrid();
+history.pushState({ view: 'favorites' }, '');
+}
+
+function sortCarsByRarity(carA, carB) {
+    const order = { secret: 1, legendary: 2, epic: 3, rare: 4, uncommon: 5 };
+    let rankA = order[carA.c] || 99;
+    let rankB = order[carB.c] || 99;
+    return rankA - rankB;
+}
+
+function renderFavoritesGrid() {
+const favoritesGrid = document.getElementById('favoritesGrid');
+let favoriteCars = cars.filter(c => favorites.includes(c.n));
+
+favoriteCars.sort(sortCarsByRarity);
+
+document.getElementById('favoriteCountInfo').innerText = translations[lang].favoriteCount + favoriteCars.length;
+
+if (favoriteCars.length === 0) {
+    favoritesGrid.innerHTML = `<div style="grid-column: 1/-1; text-align:center; color:#888; padding:20px;">${translations[lang].noFavorites}</div>`;
+    return;
+}
+
+favoritesGrid.innerHTML = favoriteCars.map(c => {
+    return `
+<div class="car-card" onclick='selectCar(${JSON.stringify(c)})'>
+<div>
+<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
+<strong style="font-size:13px; color:#fff;">${c.n}</strong>
+<span class="badge ${c.c}">${c.cn[lang]}</span>
+</div>
+</div>
+<div style="display:flex; justify-content:space-between; align-items:flex-end; border-top:1px solid #333; padding-top:5px; margin-top:5px;">
+<div style="font-size:12px; color:#aaa;">
+${c.b}<br>
+Min: <span style="color:#2196F3;">${c.p.toLocaleString()}</span>
+</div>
+<div>
+<span class="favorite-star active" onclick="toggleFavorite(event, '${c.n}'); renderFavoritesGrid();">&#9733;</span>
+</div>
+</div>
+</div>`;
+}).join('');
+}
+
+function toggleFavorite(event, carName) {
+    event.stopPropagation();
+    const index = favorites.indexOf(carName);
+    if (index > -1) {
+        favorites.splice(index, 1);
+    } else {
+        favorites.push(carName);
+    }
+    localStorage.setItem('os_rp_favorites', JSON.stringify(favorites));
+    
+    const starElement = event.target;
+    starElement.classList.toggle('active');
+}
+
+function renderCarsGrid(brand) {
+const carsGrid = document.getElementById('carsGrid');
+let filtered = cars.filter(c => c.b === brand && (currentType === 'all' || c.t === currentType));
+
+filtered.sort(sortCarsByRarity);
+
+document.getElementById('carCountInfo').innerText = translations[lang].carCount + filtered.length;
+
+carsGrid.innerHTML = filtered.map(c => {
+    const isFav = favorites.includes(c.n);
+    return `
+<div class="car-card" onclick='selectCar(${JSON.stringify(c)})'>
+<div>
+<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
+<strong style="font-size:13px; color:#fff;">${c.n}</strong>
+<span class="badge ${c.c}">${c.cn[lang]}</span>
+</div>
+</div>
+<div style="display:flex; justify-content:space-between; align-items:flex-end; border-top:1px solid #333; padding-top:5px; margin-top:5px;">
+<div style="font-size:12px; color:#aaa;">
+Min: <span style="color:#2196F3;">${c.p.toLocaleString()}</span><br>
+Hammer: <span style="color:var(--accent);">${Math.ceil(c.p*1.2).toLocaleString()}</span>
+</div>
+<div>
+<span class="favorite-star ${isFav ? 'active' : ''}" onclick="toggleFavorite(event, '${c.n}')">&#9733;</span>
+</div>
+</div>
+</div>`;
+}).join('');
+}
+
+function showBrandsView() {
+history.back();
+}
+
+function showCarListAgain() {
+history.back();
+}
+
+function globalSearchCars(query) {
+const brandsGrid = document.getElementById('brandsGrid');
+if (!query.trim()) { renderBrands(); return; }
+
+let matches = cars.filter(c => 
+    (currentType === 'all' || c.t === currentType) && 
+    (c.n.toLowerCase().includes(query.toLowerCase()) || c.b.toLowerCase().includes(query.toLowerCase()))
+);
+
+matches.sort(sortCarsByRarity);
+
+const alignStyle = lang === 'ar' ? 'text-align:right;' : 'text-align:left;';
+brandsGrid.innerHTML = matches.length ? matches.map(c => {
+    const isFav = favorites.includes(c.n);
+    return `
+<div class="car-card" onclick='selectCar(${JSON.stringify(c)})' style="${alignStyle} padding:10px;">
+<div style="display:flex; justify-content:space-between; align-items:center;">
+    <div>
+        <div style="font-size:13px; color:#fff;">${c.n}</div>
+        <div style="font-size:11px; color:var(--accent);">${c.b}</div>
+    </div>
+    <div>
+        <span class="favorite-star ${isFav ? 'active' : ''}" onclick="toggleFavorite(event, '${c.n}')">&#9733;</span>
+    </div>
+</div>
+</div>`;
+}).join('') : `<div style="grid-column: 1/-1; text-align:center; color:#888; padding:10px;">${translations[lang].noMatch}</div>`;
+}
+
+function renderCarDetails(car) {
+document.getElementById('selectedCarTitle').innerText = car.n;
+document.getElementById('infoPrice').innerText = car.p.toLocaleString() + "$";
+
+let rarityColor = '#fff';
+if (car.c === 'uncommon') rarityColor = '#34c759';
+else if (car.c === 'rare') rarityColor = '#007aff';
+else if (car.c === 'epic') rarityColor = '#af52de';
+else if (car.c === 'legendary') rarityColor = '#ffcc00';
+else if (car.c === 'secret') rarityColor = '#e74c3c';
+
+const tierTranslated = translations[lang].tiers[car.rt] || car.rt.toUpperCase();
+document.getElementById('infoRarity').innerHTML = `<span style="color:#ffffff;">${tierTranslated}</span> <span style="color:#2e7d32; font-weight:bold;">|</span> <span style="color:${rarityColor};">${car.cn[lang]}</span>`;
+
+Object.keys(partsData).forEach(k => partsData[k] = 0);
+renderPartsInputs();
+calculate();
+}
+
+function selectCar(car) {
+currentCar = car;
+document.getElementById('brandsView').style.display = 'none';
+document.getElementById('carListView').style.display = 'none';
+document.getElementById('favoritesView').style.display = 'none';
+document.getElementById('tuningView').style.display = 'block';
+
+renderCarDetails(car);
+history.pushState({ view: 'tuning', car: car }, '');
+}
+
+function calculate() {
+if (!currentCar) return;
+const tier = db[currentCar.rt];
+const stock = currentCar.p;
+const hammerStock = Math.round(stock * 1.2);
+
+let partsVal = 0;
+partsMeta.forEach(p => {
+partsVal += (partsData[p.id] || 0) * tier[p.id.toUpperCase()];
+});
+
+const minMod = Math.floor(stock + partsVal);
+const hammerMod = Math.floor(hammerStock + partsVal);
+
+let baseMultiplier = 4.0;
+if (currentCar.c === 'uncommon') {
+    baseMultiplier = 4.0; 
+} else if (currentCar.c === 'rare') {
+    baseMultiplier = 8.0;
+} else if (currentCar.c === 'epic') {
+    baseMultiplier = 10.0;
+} else if (currentCar.c === 'legendary') {
+    baseMultiplier = 14.0;
+} else if (currentCar.c === 'secret') {
+    baseMultiplier = 20.0;
+}
+
+let vmMaxVal = Math.floor(stock * baseMultiplier) + partsVal;
+
+document.getElementById('outStock').innerText = hammerStock.toLocaleString() + "$";
+document.getElementById('outMin').innerText = minMod.toLocaleString() + "$";
+document.getElementById('outHammer').innerText = hammerMod.toLocaleString() + "$";
+document.getElementById('outVmMax').innerText = vmMaxVal.toLocaleString() + "$";
+}
+
+init();
+</script>
+</body>
+</html>
